@@ -1,14 +1,10 @@
+
+
 # OfflineSync — Offline-First Field Inspection App
 
 A Flutter mobile app for capturing site inspection reports — photos, notes, and GPS location — that works completely offline and automatically syncs to the cloud the moment connectivity returns.
 
 Built to solve a real problem field workers face: spotty or no internet access on-site (warehouses, construction sites, rural locations), with no tolerance for losing data because "the app needed WiFi."
-
-## Demo
-
-> 📹 [Add your demo video link here once recorded]
-
-![App screenshot placeholder](docs/screenshot.png)
 
 ## The Problem This Solves
 
