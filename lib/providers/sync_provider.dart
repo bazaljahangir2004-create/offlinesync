@@ -1,15 +1,18 @@
+import 'dart:io';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../models/app_database.dart';
 import '../services/cloudinary_service.dart';
 import '../services/firestore_service.dart';
 import 'connectivity_provider.dart';
 import 'reports_provider.dart';
+import 'settings_provider.dart';
 
 // --- Cloudinary config ---
 // Replace these two values with your own cloud name and unsigned
 // upload preset name from the Cloudinary dashboard.
-const _cloudinaryCloudName = 'dkezo8cso';
-const _cloudinaryUploadPreset = 'offlinesync_unsigned';
+const _cloudinaryCloudName = 'YOUR_CLOUD_NAME';
+const _cloudinaryUploadPreset = 'YOUR_UPLOAD_PRESET';
 
 final cloudinaryServiceProvider = Provider<CloudinaryService>((ref) {
   return CloudinaryService(
@@ -33,16 +36,19 @@ class SyncService {
     required this.cloudinary,
     required this.firestore,
     required this.repository,
+    required this.ref,
   });
 
   final CloudinaryService cloudinary;
   final FirestoreReportsService firestore;
   final ReportsRepository repository;
+  final Ref ref;
 
   bool _isSyncing = false;
   bool get isSyncing => _isSyncing;
 
   Future<void> syncOneReport(InspectionReport report) async {
+    debugPrint('[SYNC] syncOneReport start: ${report.uuid}');
     await repository.updateSyncStatus(
       uuid: report.uuid,
       status: 'syncing',
@@ -51,8 +57,10 @@ class SyncService {
     try {
       final localPaths =
           ReportsRepository.decodeImagePaths(report.localImagePaths);
+      debugPrint('[SYNC] uploading ${localPaths.length} images');
 
       final uploadedUrls = await cloudinary.uploadImages(localPaths);
+      debugPrint('[SYNC] cloudinary upload succeeded: $uploadedUrls');
 
       await firestore.pushReport(
         uuid: report.uuid,
@@ -63,6 +71,7 @@ class SyncService {
         longitude: report.longitude,
         createdAt: report.createdAt,
       );
+      debugPrint('[SYNC] firestore push succeeded');
 
       await repository.updateSyncStatus(
         uuid: report.uuid,
@@ -70,7 +79,10 @@ class SyncService {
         uploadedImageUrls: uploadedUrls,
         syncedAt: DateTime.now(),
       );
-    } catch (e) {
+      debugPrint('[SYNC] marked synced: ${report.uuid}');
+    } catch (e, stack) {
+      debugPrint('[SYNC] FAILED for ${report.uuid}: $e');
+      debugPrint('[SYNC] stacktrace: $stack');
       await repository.updateSyncStatus(
         uuid: report.uuid,
         status: 'failed',
@@ -82,18 +94,60 @@ class SyncService {
   /// Syncs every report that isn't already marked 'synced'.
   /// Runs sequentially and guards against overlapping runs (e.g. a
   /// manual sync button tap while an automatic sync is in progress).
+  /// Respects the "Wi-Fi only" setting - if enabled and the current
+  /// connection isn't Wi-Fi, this is a no-op rather than burning the
+  /// user's mobile data.
   Future<void> syncAllPending() async {
+    debugPrint('[SYNC] syncAllPending called, isSyncing=$_isSyncing');
     if (_isSyncing) return;
+
+    final wifiOnly = ref.read(wifiOnlySyncProvider).value ?? false;
+    final connectionKind = ref.read(connectionKindProvider).value;
+
+    if (wifiOnly && connectionKind != ConnectionKind.wifi) {
+      debugPrint(
+        '[SYNC] skipped - wifi-only is on and current connection is $connectionKind',
+      );
+      return;
+    }
+
     _isSyncing = true;
 
     try {
       final pending = await repository.getUnsyncedReports();
+      debugPrint('[SYNC] found ${pending.length} unsynced reports');
       for (final report in pending) {
+        debugPrint(
+            '[SYNC] syncing report uuid=${report.uuid} title=${report.title}');
         await syncOneReport(report);
       }
+    } catch (e) {
+      debugPrint('[SYNC] syncAllPending threw: $e');
     } finally {
       _isSyncing = false;
     }
+  }
+
+  /// Estimates the total local file size (in bytes) of all photos
+  /// belonging to not-yet-synced reports. Used to show the user a
+  /// human-readable "X MB pending" figure before they sync.
+  Future<int> estimatePendingBytes() async {
+    final pending = await repository.getUnsyncedReports();
+    int total = 0;
+    for (final report in pending) {
+      final paths = ReportsRepository.decodeImagePaths(report.localImagePaths);
+      for (final path in paths) {
+        try {
+          final file = File(path);
+          if (await file.exists()) {
+            total += await file.length();
+          }
+        } catch (_) {
+          // Skip files that can't be read - shouldn't block the estimate.
+        }
+      }
+    }
+    return total;
   }
 }
 
@@ -102,18 +156,32 @@ final syncServiceProvider = Provider<SyncService>((ref) {
     cloudinary: ref.watch(cloudinaryServiceProvider),
     firestore: ref.watch(firestoreReportsServiceProvider),
     repository: ref.watch(reportsRepositoryProvider),
+    ref: ref,
   );
 });
 
 /// Watches connectivity and automatically triggers a sync the moment
-/// the device comes back online. This provider has no UI - it's a
-/// background listener wired up once near the app root (see main.dart).
+/// the device comes back online (or switches onto Wi-Fi, if the
+/// wifi-only setting is on). syncAllPending() itself checks the
+/// wifi-only preference, so this listener can fire freely on any
+/// connection change and let that check decide whether to proceed.
 final autoSyncListenerProvider = Provider<void>((ref) {
-  ref.listen(isOnlineProvider, (previous, next) {
-    final wasOffline = previous?.value == false;
-    final isNowOnline = next.value == true;
+  ref.listen(connectionKindProvider, (previous, next) {
+    final wasOffline =
+        previous?.value == ConnectionKind.none || previous?.value == null;
+    final isNowConnected =
+        next.value != null && next.value != ConnectionKind.none;
 
-    if (wasOffline && isNowOnline) {
+    if (wasOffline && isNowConnected) {
+      ref.read(syncServiceProvider).syncAllPending();
+    }
+
+    // Also catch the mobile -> wifi transition specifically, since
+    // that's the moment a wifi-only sync becomes possible even
+    // though the device was already "online" via mobile data.
+    final justGotWifi = previous?.value != ConnectionKind.wifi &&
+        next.value == ConnectionKind.wifi;
+    if (justGotWifi) {
       ref.read(syncServiceProvider).syncAllPending();
     }
   });

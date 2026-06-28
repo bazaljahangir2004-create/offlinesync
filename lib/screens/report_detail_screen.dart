@@ -6,6 +6,7 @@ import '../models/app_database.dart';
 import '../providers/reports_provider.dart';
 import '../providers/sync_provider.dart';
 import '../widgets/sync_status_badge.dart';
+import 'create_report_screen.dart';
 
 class ReportDetailScreen extends ConsumerWidget {
   const ReportDetailScreen({super.key, required this.report});
@@ -27,6 +28,19 @@ class ReportDetailScreen extends ConsumerWidget {
     return Scaffold(
       appBar: AppBar(
         title: Text(report.title),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.edit_outlined),
+            tooltip: 'Edit report',
+            onPressed: () {
+              Navigator.of(context).push(
+                MaterialPageRoute(
+                  builder: (_) => CreateReportScreen(existingReport: report),
+                ),
+              );
+            },
+          ),
+        ],
       ),
       body: ListView(
         padding: const EdgeInsets.all(16),

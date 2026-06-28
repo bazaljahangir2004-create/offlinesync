@@ -26,12 +26,27 @@ class OfflineSyncApp extends ConsumerWidget {
 
     final authState = ref.watch(authStateProvider);
 
+    // Also attempt a sync right when the app starts, in case there
+    // are pending reports left over from a previous offline session
+    // and we're already online now.
+    ref.listen(authStateProvider, (previous, next) {
+      if (next.value != null) {
+        ref.read(syncServiceProvider).syncAllPending();
+      }
+    });
+
     return MaterialApp(
       title: 'OfflineSync',
       debugShowCheckedModeBanner: false,
       theme: ThemeData(
-        colorSchemeSeed: const Color(0xFF2E7D32),
+        colorSchemeSeed: const Color(0xFF1F8A5C),
         useMaterial3: true,
+        scaffoldBackgroundColor: const Color(0xFFF7F8F6),
+        appBarTheme: const AppBarTheme(
+          backgroundColor: Colors.transparent,
+          elevation: 0,
+          surfaceTintColor: Colors.transparent,
+        ),
       ),
       home: authState.when(
         data: (user) => user != null ? const HomeScreen() : const LoginScreen(),

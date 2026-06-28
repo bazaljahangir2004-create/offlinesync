@@ -48,6 +48,32 @@ class ReportsRepository {
     return uuid;
   }
 
+  /// Updates a report's editable content (title, notes, photos,
+  /// location) and resets it to 'draft' so it gets re-synced with
+  /// the new data - editing an already-synced report means the old
+  /// cloud copy is now stale until the next sync run.
+  Future<void> updateReportContent({
+    required String uuid,
+    required String title,
+    required String notes,
+    required List<String> localImagePaths,
+    double? latitude,
+    double? longitude,
+  }) async {
+    await (_db.update(_db.inspectionReports)..where((t) => t.uuid.equals(uuid)))
+        .write(
+      InspectionReportsCompanion(
+        title: Value(title),
+        notes: Value(notes),
+        localImagePaths: Value(jsonEncode(localImagePaths)),
+        latitude: Value(latitude),
+        longitude: Value(longitude),
+        syncStatus: const Value('draft'),
+        lastSyncError: const Value(null),
+      ),
+    );
+  }
+
   /// Updates sync-related fields after an upload attempt.
   Future<void> updateSyncStatus({
     required String uuid,
