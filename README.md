@@ -13,10 +13,10 @@ Built to solve a real problem field workers face: spotty or no internet access o
 
 <<<<<<< HEAD
 ## Demo
+> 📹 
 
-> 📹 [Add your demo video link here once recorded]
+https://github.com/user-attachments/assets/cf250bba-7180-44b5-bf25-e4f442496623
 
-![App screenshot placeholder](docs/screenshot.png)
 
 =======
 >>>>>>> 801cb79bb11b5a40e6d33a23371742dfd377e714
