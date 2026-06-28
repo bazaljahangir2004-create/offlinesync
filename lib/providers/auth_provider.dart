@@ -1,4 +1,5 @@
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 final firebaseAuthProvider = Provider<FirebaseAuth>((ref) {
@@ -8,7 +9,11 @@ final firebaseAuthProvider = Provider<FirebaseAuth>((ref) {
 /// Streams the current user - null when signed out. The UI watches
 /// this to decide whether to show the login screen or the app itself.
 final authStateProvider = StreamProvider<User?>((ref) {
-  return ref.watch(firebaseAuthProvider).authStateChanges();
+  return ref.watch(firebaseAuthProvider).authStateChanges().map((user) {
+    debugPrint(
+        '[AUTH] authStateChanges emitted: ${user?.email ?? "null (signed out)"}');
+    return user;
+  });
 });
 
 class AuthService {

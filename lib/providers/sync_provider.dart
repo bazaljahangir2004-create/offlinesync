@@ -11,8 +11,8 @@ import 'settings_provider.dart';
 // --- Cloudinary config ---
 // Replace these two values with your own cloud name and unsigned
 // upload preset name from the Cloudinary dashboard.
-const _cloudinaryCloudName = 'YOUR_CLOUD_NAME';
-const _cloudinaryUploadPreset = 'YOUR_UPLOAD_PRESET';
+const _cloudinaryCloudName = 'dkezo8cso';
+const _cloudinaryUploadPreset = 'offlinesync_unsigned';
 
 final cloudinaryServiceProvider = Provider<CloudinaryService>((ref) {
   return CloudinaryService(
