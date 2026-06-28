@@ -1,15 +1,25 @@
+<<<<<<< HEAD
 # OfflineSync — Offline-First Field Inspection App
 
+=======
+
+
+# OfflineSync — Offline-First Field Inspection App
+
+>>>>>>> 801cb79bb11b5a40e6d33a23371742dfd377e714
 A Flutter mobile app for capturing site inspection reports — photos, notes, and GPS location — that works completely offline and automatically syncs to the cloud the moment connectivity returns.
 
 Built to solve a real problem field workers face: spotty or no internet access on-site (warehouses, construction sites, rural locations), with no tolerance for losing data because "the app needed WiFi."
 
+<<<<<<< HEAD
 ## Demo
 
 > 📹 [Add your demo video link here once recorded]
 
 ![App screenshot placeholder](docs/screenshot.png)
 
+=======
+>>>>>>> 801cb79bb11b5a40e6d33a23371742dfd377e714
 ## The Problem This Solves
 
 Most CRUD-style mobile apps assume a live internet connection. In real field conditions — basements, warehouses, rural sites — that assumption breaks, and a typical app either crashes, loses data, or simply can't be used. OfflineSync is built offline-first from the ground up: every report is captured and stored locally first, with cloud sync treated as a background concern, not a blocker.
@@ -90,4 +100,8 @@ flutter run
 
 ## About This Project
 
+<<<<<<< HEAD
 Built as a portfolio project to demonstrate production-grade mobile engineering patterns: offline-first architecture, reactive state management, cloud sync with failure recovery, and security-conscious backend design — rather than a basic CRUD demo.
+=======
+Built as a portfolio project to demonstrate production-grade mobile engineering patterns: offline-first architecture, reactive state management, cloud sync with failure recovery, and security-conscious backend design — rather than a basic CRUD demo.
+>>>>>>> 801cb79bb11b5a40e6d33a23371742dfd377e714
